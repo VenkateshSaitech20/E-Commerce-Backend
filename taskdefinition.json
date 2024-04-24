@@ -1,0 +1,47 @@
+{
+    "family": "axicom-ecs-e-commerce-backend-taskdefinition",
+    "containerDefinitions": [
+        {
+            "name": "e-commerce-backend",
+            "image": "<IMAGE1_NAME>",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "name": "e-commerce-backend",
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }
+            ],
+            "essential": true,
+            "environment": [],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "/ecs/axicom-ecs-e-commerce-backend-taskdefinition",
+                    "awslogs-region": "ap-south-1",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            }
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::715159945765:role/ECSTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::715159945765:role/ECSTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "3072",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    }
+}

@@ -1,0 +1,80 @@
+
+version: 0.2
+env:
+  variables:
+    ECR_REPOSITORY_NAME: ""
+    AWS_DEFAULT_REGION: "ap-south-1"
+
+batch:
+  fast-fail: true
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+      php: 8.3
+    on-failure: ABORT
+    commands:
+      - echo "[INFO] Install phase started on `date`"
+      - pip install --upgrade pip
+      - pip install awscli pip-licenses
+      - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+      - sudo apt-get update && sudo apt-get -y install unzip jq curl tree iputils-ping 
+      - echo "[INFO] Install phase completed on `date`"
+
+  pre_build:
+    on-failure: ABORT
+    commands:
+      - export AWS_DEFAULT_REGION=ap-south-1
+      - export AWS_ACCOUNT_ID=639782257614
+      - cd $CODEBUILD_SRC_DIR
+      - COMMIT_ID=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)
+      - echo "[INFO] Commit_ID:" $COMMIT_ID
+      - echo "[INFO] Logging in to Amazon ECR to Pull Base Images"
+      # Logging into ECR Repo
+      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 639782257614.dkr.ecr.ap-south-1.amazonaws.com   
+      - echo "[INFO] Connecting to AWS CodeArtifact to Pull Artifacts"
+      # Logging into Codeartifact to pull Artifacts
+    finally:
+      - echo "[INFO] Prebuild phase completed on `date`"
+
+  build:
+    on-failure: ABORT
+    commands:
+      - export REPOSITORY_URI=639782257614.dkr.ecr.ap-south-1.amazonaws.com/e-commerce-backend
+      - export AWS_DEFAULT_REGION=ap-south-1
+      - export AWS_ACCOUNT_ID=639782257614
+      - echo "[INFO] Build phase started on `date`"
+      - pwd
+      - ls -la
+      - cd $CODEBUILD_SRC_DIR
+      - echo "[INFO] Building the Docker Image..."
+      # - CM TODO  
+      # Building a Docker image here
+      - docker build -t $REPOSITORY_URI:latest -f Dockerfile .
+      - docker tag $REPOSITORY_URI:latest  $REPOSITORY_URI:$COMMIT_ID 
+      - echo "[INFO] Build phase completed on `date`"
+
+  post_build:
+    on-failure: ABORT
+    commands:
+      - export REPOSITORY_URI=639782257614.dkr.ecr.ap-south-1.amazonaws.com/e-commerce-backend
+      - echo "[INFO] Postbuild phase started on `date`"
+      #Pushing Docker Image to Repo
+      - echo "[INFO] Pushing Docker Image to remote ECR Repository..."
+      - docker push $REPOSITORY_URI:latest 
+      - docker push $REPOSITORY_URI:$COMMIT_ID
+      - echo "[INFO] Docker Build and Push completed on" `date`
+      - cd $CODEBUILD_SRC_DIR
+      - printf '{"ImageURI":"%s"}' $REPOSITORY_URI:$COMMIT_ID > imageDetail.json
+      - echo "[INFO] Postbuild phase completed on `date`"
+
+artifacts:
+  files:
+    - imagedefinitions.json
+    - imageDetail.json
+    #- appspec.yml
+    #- taskdefinition.json
+    #- taskdefinition-prod.json
+    #- appspec-prod.yml
+  #base-directory: build
+  name: build-$(date +%Y-%m-%d)
